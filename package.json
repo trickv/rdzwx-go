@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "cordova-android": "^13.0.0",
+    "cordova-ios": "^7.1.1",
     "cordova-plugin-androidx-adapter": "^1.1.3",
     "cordova-plugin-inappbrowser": "^5.0.0",
     "rdzwx-plugin": "file:../rdzwx-plugin"
