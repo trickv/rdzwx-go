@@ -11,16 +11,16 @@ See https://github.com/dl9rdz/rdzwx-go/wiki for details how to use.
 - Install Android Studio (currently tested with Iguana 2023.2.1 Patch 1)
 
      In Settings > Languages&Frameworks > Android SDK
-     
+
      SDK Platforms:  select some relevant platform (I used Android API 35)
-      
+
      SDK Tools: I selected Build-Tools, NDK, SDK command line, emulator, SKK platform tools (maybe not all necessary)
      Specifically, build tools version 35.0.0
-      
+
 - `export ANDROID_SDK_ROOT=/Users/me/Library/Android/sdk`
 
   Use path shown in Android Studio preferences as "Android SDK Location"!
-  
+
 - Install node.js (after that you should be able to run "node" and "npm" on your command line)
   (On MacOS I did 'brew install nodejs', versionm 25.2.1)
 - Install Cordova (used version 13.0.0): `sudo npm install -g cordova`
@@ -29,52 +29,3 @@ See https://github.com/dl9rdz/rdzwx-go/wiki for details how to use.
 - `cordova build` to build debug apk
 - `cordova build --release` to build releaes apk
 - `cordova run android` to upload apk via usb to phone
-
-## iOS Development (macOS only)
-
-### Prerequisites
-- macOS with Xcode installed
-- Node.js and Cordova CLI
-- Run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` to set Xcode path
-
-### Building for iOS
-
-```bash
-cd rdzwx-go
-cordova platform add ios
-cordova plugin add ../rdzwx-plugin/
-cordova build ios
-```
-
-To run in the simulator:
-```bash
-cordova run ios --emulator
-```
-
-Or manually with simctl:
-```bash
-xcrun simctl boot "iPhone 16 Plus"
-xcrun simctl install "iPhone 16 Plus" platforms/ios/build/Debug-iphonesimulator/rdzSonde.app
-xcrun simctl launch "iPhone 16 Plus" de.dl9rdz
-open -a Simulator
-```
-
-### Viewing Debug Logs
-
-Stream all app logs:
-```bash
-xcrun simctl spawn "iPhone 16 Plus" log stream \
-  --predicate 'processImagePath contains "rdzSonde"' --level debug
-```
-
-Stream only custom app logs (less verbose):
-```bash
-xcrun simctl spawn "iPhone 16 Plus" log stream \
-  --predicate 'subsystem contains "de.dl9rdz"' --level info
-```
-
-Key log messages to look for:
-- `JsonRdzHandler: Attempting to connect to <ip>:<port>` - TCP connection attempts
-- `JsonRdzHandler: Connection timeout` - No response from TTGO device
-- `callback: { "msgtype": "ttgostatus", ... }` - Status updates to JS layer
-
