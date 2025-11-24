@@ -78,7 +78,32 @@ npm i jetifier && npx jetifier    # For AndroidX compatibility
 1. **Quick Development**: Use `make run` for frontend changes
 2. **Plugin Changes**: Use `make full` when modifying native plugin code
 3. **Testing**: Deploy to physical Android device or emulator
-4. **Prerequisites**: Java 11, Android SDK (API 23-33), Node.js, Cordova CLI
+4. **Prerequisites**: Java 17, Android SDK (API 34+, build-tools 35.0.0), Node.js, Cordova CLI
+
+### macOS Environment Setup
+
+Required environment variables (add to `~/.zshrc`):
+
+```bash
+export JAVA_HOME=/opt/homebrew/opt/openjdk@17/libexec/openjdk.jdk/Contents/Home
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH="$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/platform-tools:/opt/homebrew/bin"
+```
+
+Install dependencies:
+```bash
+brew install openjdk@17 gradle nvm
+brew install --cask android-studio
+nvm install --lts
+npm install -g cordova
+```
+
+### Android Build Requirements (cordova-android 14.x)
+
+- **compileSdkVersion**: 35 (required by bundled AndroidX libraries)
+- **targetSdkVersion**: 34 (Google Play requirement)
+- **Kotlin**: 1.8.22+ (avoids duplicate class conflicts)
+- **AIDL**: Enabled via `build-extras.gradle` in plugin (AGP 8.0+ disables by default)
 
 ## Release Process
 
@@ -213,6 +238,9 @@ npm i jetifier && npx jetifier    # For AndroidX compatibility
 
 ---
 
-**Last Updated**: December 2024  
-**Status**: iOS foundation complete, ready for device testing  
-**Next Session**: Test on iOS device with TTGO hardware
+**Last Updated**: November 2025
+**Status**: Both iOS and Android builds working on macOS
+**Recent Changes**:
+- Android build fixed for cordova-android 14.x (AIDL, Kotlin 1.8.22, compileSdk 35)
+- iOS build working via `cordova build ios`
+- Environment setup documented in README and CLAUDE.md
