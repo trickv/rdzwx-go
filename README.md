@@ -29,4 +29,52 @@ See https://github.com/dl9rdz/rdzwx-go/wiki for details how to use.
 - `cordova build` to build debug apk
 - `cordova build --release` to build releaes apk
 - `cordova run android` to upload apk via usb to phone
-                                
+
+## iOS Development (macOS only)
+
+### Prerequisites
+- macOS with Xcode installed
+- Node.js and Cordova CLI
+- Run `sudo xcode-select -s /Applications/Xcode.app/Contents/Developer` to set Xcode path
+
+### Building for iOS
+
+```bash
+cd rdzwx-go
+cordova platform add ios
+cordova plugin add ../rdzwx-plugin/
+cordova build ios
+```
+
+To run in the simulator:
+```bash
+cordova run ios --emulator
+```
+
+Or manually with simctl:
+```bash
+xcrun simctl boot "iPhone 16 Plus"
+xcrun simctl install "iPhone 16 Plus" platforms/ios/build/Debug-iphonesimulator/rdzSonde.app
+xcrun simctl launch "iPhone 16 Plus" de.dl9rdz
+open -a Simulator
+```
+
+### Viewing Debug Logs
+
+Stream all app logs:
+```bash
+xcrun simctl spawn "iPhone 16 Plus" log stream \
+  --predicate 'processImagePath contains "rdzSonde"' --level debug
+```
+
+Stream only custom app logs (less verbose):
+```bash
+xcrun simctl spawn "iPhone 16 Plus" log stream \
+  --predicate 'subsystem contains "de.dl9rdz"' --level info
+```
+
+Key log messages to look for:
+- `JsonRdzHandler: Attempting to connect to <ip>:<port>` - TCP connection attempts
+- `JsonRdzHandler: Connection timeout` - No response from TTGO device
+- `callback: { "msgtype": "ttgostatus", ... }` - Status updates to JS layer
+

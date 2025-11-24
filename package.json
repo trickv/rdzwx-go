@@ -37,7 +37,8 @@
     },
     "platforms": [
       "android",
-      "electron"
+      "electron",
+      "ios"
     ]
   },
   "browser": {
