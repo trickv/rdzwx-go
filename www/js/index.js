@@ -80,21 +80,43 @@ function onDeviceReady() {
 
     console.log('Running cordova-' + cordova.platformId + '@' + cordova.version);
 
-    // Check for updates
-    fetch("https://raw.githubusercontent.com/dl9rdz/rdzwx-go/main/version.json")
-    .then(response => response.json())
-    .then(data => {
-      console.log('Success:', data);
-          if(data.version > "1.0.7") {
-             if(window.confirm("New version "+ data.version + " available! Download?")) {
-		console.log("opening "+data.url);
-		cordova.InAppBrowser.open(data.url, "_system");
-	     }
-	  }
-    })
-    .catch((error) => {
-      console.error('Error:', error);
-    });
+    // Load local version and set it in the UI
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'version.json', true);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        var localVersion = JSON.parse(xhr.responseText);
+        console.log('Local version:', localVersion.version);
+        // Update title and h2 with current version
+        document.title = 'rdzSonde v' + localVersion.version;
+        var h2Element = document.querySelector('#toolbar h2');
+        if (h2Element) {
+          h2Element.textContent = 'rdzSonde v' + localVersion.version;
+        }
+
+        // Check for updates from remote
+        fetch("https://raw.githubusercontent.com/dl9rdz/rdzwx-go/main/version.json")
+        .then(response => response.json())
+        .then(remoteVersion => {
+          console.log('Remote version:', remoteVersion.version);
+          if(remoteVersion.version > localVersion.version) {
+            if(window.confirm("New version "+ remoteVersion.version + " available! Download?")) {
+              console.log("opening "+remoteVersion.url);
+              cordova.InAppBrowser.open(remoteVersion.url, "_system");
+            }
+          }
+        })
+        .catch((error) => {
+          console.error('Error checking for updates:', error);
+        });
+      } else {
+        console.error('Error loading local version: HTTP', xhr.status);
+      }
+    };
+    xhr.onerror = function() {
+      console.error('Error loading local version:', xhr.statusText);
+    };
+    xhr.send();
 
     // Some map tile sources
     var tfapikey = "01be52efbdc14d38beac233a870c8d4f";
