@@ -39,6 +39,21 @@ cordova platform add ios        # iOS platform (requires macOS)
 npm i jetifier && npx jetifier    # For AndroidX compatibility
 ```
 
+### Android Emulator Commands
+```bash
+# List available AVDs
+emulator -list-avds
+
+# Run emulator with optimized settings (hardware GPU acceleration)
+emulator -avd <avd_name> -gpu host -no-audio
+
+# Run with snapshots for faster boot (recommended after initial setup)
+emulator -avd <avd_name> -gpu host
+
+# Note: KVM acceleration is automatically used on Linux if available
+# CPU usage is high during boot (~300%) but drops to ~30% after boot completes
+```
+
 ## Architecture
 
 ### Multi-Platform Hybrid Architecture
