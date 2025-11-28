@@ -64,6 +64,14 @@
           <label><input type="radio" name="connection" id="auto-discovery" value="auto"> Automatic (mDNS discovery) </label><br>
           <label><input type="radio" name="connection" id="manual-entry" value="manual"> Manual IP/host entry </label><br>
           <input type="text" id="manual-address" placeholder="Enter IP/Hostname" style="display:none; width: 100%;">
+          <div id="connection-status" style="margin-top: 10px; padding: 8px; border-radius: 4px; font-size: 0.9em;">
+            <div id="mdns-status" style="margin-bottom: 5px;">
+              <strong>mDNS:</strong> <span id="mdns-status-text" style="color: #999;">Not active</span>
+            </div>
+            <div id="node-status">
+              <strong>Connection:</strong> <span id="node-status-text" style="color: #999;">Disconnected</span>
+            </div>
+          </div>
           </div>
 	  <div id="toolbaritems">
           </div>
