@@ -766,6 +766,38 @@ function periodicStatusCheck() {
     }
 }
 
+function updateConnectionStatus(connected, ip) {
+    const statusEl = document.getElementById('node-status-text');
+    if (!statusEl) return;
+
+    if (connected && ip) {
+        statusEl.textContent = 'Connected to ' + ip;
+        statusEl.style.color = '#00AA00';
+    } else {
+        statusEl.textContent = 'Disconnected';
+        statusEl.style.color = '#999';
+    }
+}
+
+function updateMdnsStatus(status, details) {
+    const statusEl = document.getElementById('mdns-status-text');
+    if (!statusEl) return;
+
+    if (status === 'searching') {
+        statusEl.textContent = 'Searching...';
+        statusEl.style.color = '#FF8800';
+    } else if (status === 'found') {
+        statusEl.textContent = 'Device found: ' + (details || '');
+        statusEl.style.color = '#00AA00';
+    } else if (status === 'active') {
+        statusEl.textContent = 'Active';
+        statusEl.style.color = '#00AA00';
+    } else {
+        statusEl.textContent = 'Not active';
+        statusEl.style.color = '#999';
+    }
+}
+
 function update(obj) {
     if(!ready || !map) {
  	console.log("not ready");
@@ -776,10 +808,18 @@ function update(obj) {
 	if(obj.msgtype == "ttgostatus") {
 	    ttgoStatus.ttgourl = 'http://' + obj.ip;
 	    ttgoStatus.state(obj.state)
-	    if(obj.state=="offline") { infobox.setStatus(1); }
+	    if(obj.state=="offline") {
+	        infobox.setStatus(1);
+	        updateConnectionStatus(false, null);
+	    } else {
+	        updateConnectionStatus(true, obj.ip);
+	    }
         }
 	if(obj.msgtype == "gps") {
 	    updateMypos(obj);
+	}
+	if(obj.msgtype == "mdnsstatus") {
+	    updateMdnsStatus(obj.status, obj.details);
 	}
 	console.log("update: type="+obj.msgtype);
 	return;
@@ -941,9 +981,11 @@ function setupTTGOconfig() {
     if (savedState === 'auto') {
         document.getElementById('auto-discovery').checked = true;
         document.getElementById('manual-address').style.display = 'none';
+        updateMdnsStatus('searching', null);
     } else if (savedState === 'manual') {
         document.getElementById('manual-entry').checked = true;
         document.getElementById('manual-address').style.display = 'block';
+        updateMdnsStatus('inactive', null);
     }
 
     if (savedAddr) {
@@ -961,8 +1003,10 @@ function setupTTGOconfig() {
             localStorage.setItem('connectionState', state );
             if (state === 'manual') {
                 manualAddressInput.style.display = 'block';
+                updateMdnsStatus('inactive', null);
             } else {
                 manualAddressInput.style.display = 'none';
+                updateMdnsStatus('searching', null);
             }
             updateTTGOaddr(state, addr);
         });
