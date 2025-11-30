@@ -1,0 +1,126 @@
+name: iOS Build & Test
+
+on:
+  push:
+    branches: [ main, master, develop, 'claude/**' ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  ios-build:
+    name: Build iOS App
+    runs-on: macos-14  # macOS with Xcode 15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+        token: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        cache-dependency-path: rdzwx-go/package.json
+
+    - name: Select Xcode version
+      run: sudo xcode-select -s /Applications/Xcode_15.2.app/Contents/Developer
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: Install Cordova CLI
+      run: npm install -g cordova@latest
+
+    - name: Install CocoaPods
+      run: |
+        gem install cocoapods
+        pod --version
+
+    - name: Install dependencies
+      working-directory: ./rdzwx-go
+      run: npm install
+
+    - name: Add iOS platform
+      working-directory: ./rdzwx-go
+      run: |
+        cordova platform add ios || true
+
+    - name: Add custom plugin
+      working-directory: ./rdzwx-go
+      run: |
+        cordova plugin add ../rdzwx-plugin/ || cordova plugin remove com.rdzwx.plugin && cordova plugin add ../rdzwx-plugin/
+
+    - name: Install iOS pods (if podfile exists)
+      working-directory: ./rdzwx-go/platforms/ios
+      run: |
+        if [ -f "Podfile" ]; then
+          pod install
+        fi
+      continue-on-error: true
+
+    - name: Verify Cordova requirements
+      working-directory: ./rdzwx-go
+      run: cordova requirements ios
+
+    - name: Build iOS for simulator (Debug)
+      working-directory: ./rdzwx-go
+      run: cordova build ios --debug --emulator --verbose
+
+    - name: Build iOS for device (Release, unsigned)
+      working-directory: ./rdzwx-go
+      run: cordova build ios --release --device --verbose
+      continue-on-error: true
+
+    - name: List build outputs
+      working-directory: ./rdzwx-go
+      run: |
+        echo "=== iOS Build Products ==="
+        find platforms/ios/build -name "*.app" -type d 2>/dev/null || echo "No .app bundles found"
+        echo ""
+        echo "=== Xcode DerivedData ==="
+        find platforms/ios/build -type d -name "*.xcarchive" 2>/dev/null || echo "No archives found"
+
+    - name: Create IPA from app bundle (if build succeeded)
+      working-directory: ./rdzwx-go/platforms/ios/build
+      run: |
+        if [ -d "emulator" ] && [ -n "$(find emulator -name "*.app" -type d 2>/dev/null)" ]; then
+          APP_PATH=$(find emulator -name "*.app" -type d | head -1)
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          zip -r rdzSonde-debug.ipa Payload/
+          rm -rf Payload
+          echo "Created debug IPA"
+        fi
+      continue-on-error: true
+
+    - name: Upload iOS Debug Build
+      uses: actions/upload-artifact@v4
+      with:
+        name: ios-debug-app
+        path: |
+          rdzwx-go/platforms/ios/build/emulator/*.app
+          rdzwx-go/platforms/ios/build/rdzSonde-debug.ipa
+        if-no-files-found: warn
+        retention-days: 30
+
+    - name: Upload iOS Release Build (if exists)
+      uses: actions/upload-artifact@v4
+      if: success() || failure()
+      with:
+        name: ios-release-app
+        path: rdzwx-go/platforms/ios/build/device/*.app
+        if-no-files-found: ignore
+        retention-days: 30
+
+    - name: Run iOS syntax check (xcodebuild)
+      working-directory: ./rdzwx-go/platforms/ios
+      run: |
+        WORKSPACE=$(find . -name "*.xcworkspace" | head -1)
+        if [ -n "$WORKSPACE" ]; then
+          xcodebuild -workspace "$WORKSPACE" -scheme rdzSonde -sdk iphonesimulator -configuration Debug clean analyze
+        fi
+      continue-on-error: true
