@@ -102,13 +102,16 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova@latest
 
+    - name: Install CocoaPods
+      run: sudo gem install cocoapods
+
     - name: Build iOS
       working-directory: ./rdzwx-go
       run: |
         npm install
-        cordova platform add ios
-        cordova plugin add ../rdzwx-plugin/
-        cordova build ios --emulator
+        cordova platform add ios --verbose
+        cordova plugin add ../rdzwx-plugin/ --verbose
+        cordova build ios --emulator --verbose
 
     - name: Upload iOS App
       uses: actions/upload-artifact@v4
