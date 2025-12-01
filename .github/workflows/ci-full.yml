@@ -102,6 +102,9 @@ jobs:
     - name: Install Cordova
       run: npm install -g cordova@latest
 
+    - name: Install ios-deploy
+      run: npm install -g ios-deploy
+
     - name: Install CocoaPods
       run: sudo gem install cocoapods
 
