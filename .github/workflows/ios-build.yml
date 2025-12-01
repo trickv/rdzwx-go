@@ -110,36 +110,7 @@ jobs:
 
     - name: Capture build logs on failure
       if: failure()
-      working-directory: ./rdzwx-go
       run: |
-        echo "=== Capturing build failure logs ==="
-        mkdir -p /tmp/build-logs
-
-        # Capture the main build output
-        cp /tmp/cordova-build-output.log /tmp/build-logs/ 2>/dev/null || true
-
-        # Capture CocoaPods logs
-        if [ -d "platforms/ios/Pods" ]; then
-          cp platforms/ios/Pods/Manifest.lock /tmp/build-logs/ 2>/dev/null || true
-          cp platforms/ios/Podfile.lock /tmp/build-logs/ 2>/dev/null || true
-        fi
-
-        # Capture Xcode build logs
-        if [ -d "$HOME/Library/Developer/Xcode/DerivedData" ]; then
-          find "$HOME/Library/Developer/Xcode/DerivedData" -name "*.log" -exec cp {} /tmp/build-logs/ \; 2>/dev/null || true
-        fi
-
-        # Capture Cordova logs
-        cp platforms/ios/cordova/build.log /tmp/build-logs/ 2>/dev/null || true
-
-        # List all files in platforms/ios for debugging
-        ls -laR platforms/ios > /tmp/build-logs/ios-structure.txt 2>&1 || true
-
-        # Get the last 200 lines of the build output for quick reference
-        if [ -f /tmp/cordova-build-output.log ]; then
-          tail -200 /tmp/cordova-build-output.log > /tmp/build-logs/build-output-tail.txt
-        fi
-
         # Output error to workflow summary (publicly viewable)
         if [ -f /tmp/cordova-build-output.log ]; then
           echo "## 🔴 iOS Build Failed" >> $GITHUB_STEP_SUMMARY
@@ -149,17 +120,6 @@ jobs:
           tail -100 /tmp/cordova-build-output.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Could not read build output" >> $GITHUB_STEP_SUMMARY
           echo '```' >> $GITHUB_STEP_SUMMARY
         fi
-
-        echo "Logs captured to /tmp/build-logs"
-        ls -la /tmp/build-logs
-
-    - name: Upload build failure logs
-      if: failure()
-      uses: actions/upload-artifact@v4
-      with:
-        name: ios-build-failure-logs
-        path: /tmp/build-logs/
-        retention-days: 7
 
     - name: List build outputs
       working-directory: ./rdzwx-go
