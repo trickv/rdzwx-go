@@ -114,6 +114,12 @@ jobs:
         npm install
         cordova platform add ios --verbose
         cordova plugin add ../rdzwx-plugin/ --verbose
+        # Install CocoaPods dependencies
+        cd platforms/ios
+        if [ -f "Podfile" ]; then
+          pod install --verbose
+        fi
+        cd ../..
         cordova build ios --emulator --verbose
 
     - name: Upload iOS App
