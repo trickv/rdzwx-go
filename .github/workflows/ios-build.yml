@@ -72,16 +72,11 @@ jobs:
         }
         cordova plugin ls
 
-    - name: Install iOS CocoaPods dependencies
-      working-directory: ./rdzwx-go/platforms/ios
+    - name: Prepare iOS platform (with CocoaPods)
+      working-directory: ./rdzwx-go
       run: |
-        echo "=== Installing CocoaPods dependencies ==="
-        if [ -f "Podfile" ]; then
-          echo "Podfile found, running pod install..."
-          pod install --verbose
-        else
-          echo "No Podfile found, skipping pod install"
-        fi
+        echo "=== Preparing iOS platform ==="
+        cordova prepare ios --verbose
 
     - name: Verify Cordova requirements
       working-directory: ./rdzwx-go
