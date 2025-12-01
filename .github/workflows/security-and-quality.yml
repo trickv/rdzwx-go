@@ -25,7 +25,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
 
     - name: Install dependencies (main project)
       working-directory: ./rdzwx-go
@@ -35,8 +35,9 @@ jobs:
       working-directory: ./rdzwx-go
       run: |
         echo "=== NPM Audit Report for rdzwx-go ==="
-        npm audit --audit-level=moderate || true
-        npm audit --json > ../npm-audit-main.json || true
+        echo "Checking production dependencies only (dev dependencies are part of Cordova toolchain)..."
+        npm audit --production --audit-level=moderate || true
+        npm audit --production --json > ../npm-audit-main.json || true
       continue-on-error: true
 
     - name: Run npm audit (plugin)
@@ -45,8 +46,8 @@ jobs:
         if [ -f "package.json" ]; then
           echo "=== NPM Audit Report for rdzwx-plugin ==="
           npm install --package-lock-only || npm install
-          npm audit --audit-level=moderate || true
-          npm audit --json > ../npm-audit-plugin.json || true
+          npm audit --production --audit-level=moderate || true
+          npm audit --production --json > ../npm-audit-plugin.json || true
         fi
       continue-on-error: true
 
@@ -80,7 +81,7 @@ jobs:
     - name: Set up Node.js
       uses: actions/setup-node@v4
       with:
-        node-version: '18'
+        node-version: '20'
 
     - name: Install dependencies
       working-directory: ./rdzwx-go
