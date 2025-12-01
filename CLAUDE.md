@@ -95,6 +95,19 @@ emulator -avd <avd_name> -gpu host
 3. **Testing**: Deploy to physical Android device or emulator
 4. **Prerequisites**: Java 17, Android SDK (API 34+, build-tools 35.0.0), Node.js, Cordova CLI
 
+### iOS Development Workflow
+**IMPORTANT**: Plugin changes require reinstalling the plugin, not just building:
+
+```bash
+# After making changes to iOS plugin code in rdzwx-plugin/
+cd rdzwx-go
+cordova plugin remove de-dl9rdz-rdzwx && cordova plugin add ../rdzwx-plugin/
+cordova build ios    # Rebuild iOS app with updated plugin
+# Then test in Xcode or simulator
+```
+
+**Note**: `cordova build ios` alone does NOT copy plugin changes from `rdzwx-plugin/` to `platforms/ios/`. You must reinstall the plugin first.
+
 ### macOS Environment Setup
 
 Required environment variables (add to `~/.zshrc`):
