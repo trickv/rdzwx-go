@@ -89,19 +89,58 @@ jobs:
           echo "Waiting for app to launch..."
           sleep 10
 
-          echo "Taking screenshot..."
-          adb shell screencap -p /sdcard/screenshot.png
-          adb pull /sdcard/screenshot.png ./android-screenshot.png
+          echo "Taking initial screenshot..."
+          adb shell screencap -p /sdcard/screenshot-1-initial.png
+          adb pull /sdcard/screenshot-1-initial.png ./
 
-          echo "Screenshot saved!"
-          ls -lh android-screenshot.png
+          echo "Dumping UI hierarchy for reference..."
+          adb shell uiautomator dump /sdcard/ui-hierarchy.xml
+          adb pull /sdcard/ui-hierarchy.xml ./
 
-    - name: Upload Android Screenshot
+          # Get screen dimensions for reference
+          adb shell wm size
+
+          echo "Attempting UI interactions..."
+
+          # Example: Tap in the center of the screen
+          sleep 2
+          adb shell input tap 540 960
+          sleep 3
+          adb shell screencap -p /sdcard/screenshot-2-after-center-tap.png
+          adb pull /sdcard/screenshot-2-after-center-tap.png ./
+
+          # Example: Tap near top-right (common menu location)
+          sleep 2
+          adb shell input tap 1000 200
+          sleep 3
+          adb shell screencap -p /sdcard/screenshot-3-after-menu-tap.png
+          adb pull /sdcard/screenshot-3-after-menu-tap.png ./
+
+          # Example: Swipe gesture (left to right)
+          sleep 2
+          adb shell input swipe 200 960 800 960 300
+          sleep 3
+          adb shell screencap -p /sdcard/screenshot-4-after-swipe.png
+          adb pull /sdcard/screenshot-4-after-swipe.png ./
+
+          # Press back button
+          sleep 2
+          adb shell input keyevent KEYCODE_BACK
+          sleep 3
+          adb shell screencap -p /sdcard/screenshot-5-after-back.png
+          adb pull /sdcard/screenshot-5-after-back.png ./
+
+          echo "All screenshots captured!"
+          ls -lh screenshot-*.png
+
+    - name: Upload Android Screenshots
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: android-screenshot
-        path: android-screenshot.png
+        name: android-screenshots
+        path: |
+          screenshot-*.png
+          ui-hierarchy.xml
         retention-days: 30
 
   ios-simulator:
@@ -185,6 +224,7 @@ jobs:
         # Get the bundle ID
         BUNDLE_ID=$(defaults read "$APP_PATH/Info.plist" CFBundleIdentifier)
         echo "Bundle ID: $BUNDLE_ID"
+        echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
 
         # Launch the app
         echo "Launching app..."
@@ -194,22 +234,54 @@ jobs:
         echo "Waiting for app to launch..."
         sleep 10
 
-    - name: Take screenshot
+    - name: Interact with app and take screenshots
       run: |
-        echo "Taking screenshot..."
-        xcrun simctl io "$SIMULATOR_UDID" screenshot ./ios-screenshot.png
+        echo "Taking initial screenshot..."
+        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-1-initial.png
 
-        echo "Screenshot saved!"
-        ls -lh ios-screenshot.png
+        echo "Attempting UI interactions..."
+
+        # Tap in the center of the screen (rough coordinates for iPhone)
+        sleep 2
+        xcrun simctl io "$SIMULATOR_UDID" tap 195 400
+        sleep 3
+        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-2-after-center-tap.png
+
+        # Tap near top-right (common menu location)
+        sleep 2
+        xcrun simctl io "$SIMULATOR_UDID" tap 350 100
+        sleep 3
+        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-3-after-menu-tap.png
+
+        # Swipe gesture (left to right)
+        sleep 2
+        xcrun simctl io "$SIMULATOR_UDID" swipe 50 400 350 400
+        sleep 3
+        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-4-after-swipe.png
+
+        # Press home button to return to home screen
+        sleep 2
+        xcrun simctl io "$SIMULATOR_UDID" home
+        sleep 2
+        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-5-home-screen.png
+
+        # Relaunch app
+        sleep 2
+        xcrun simctl launch "$SIMULATOR_UDID" "$BUNDLE_ID"
+        sleep 3
+        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-6-relaunched.png
+
+        echo "All screenshots captured!"
+        ls -lh screenshot-*.png
 
     - name: Shutdown simulator
       if: always()
       run: xcrun simctl shutdown "$SIMULATOR_UDID" || true
 
-    - name: Upload iOS Screenshot
+    - name: Upload iOS Screenshots
       uses: actions/upload-artifact@v4
       if: always()
       with:
-        name: ios-screenshot
-        path: ios-screenshot.png
+        name: ios-screenshots
+        path: screenshot-*.png
         retention-days: 30
