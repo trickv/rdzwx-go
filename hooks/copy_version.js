@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * Cordova hook to copy version.json into www/ before build
- * This allows the app to read its own version locally
+ * Cordova hook to convert version.json into version.js before build
+ * This allows the app to read its version via a script tag (works on iOS)
  */
 
 const fs = require('fs');
@@ -11,14 +11,17 @@ const path = require('path');
 module.exports = function(context) {
     const projectRoot = context.opts.projectRoot;
     const sourceFile = path.join(projectRoot, 'version.json');
-    const destFile = path.join(projectRoot, 'www', 'version.json');
+    const destFile = path.join(projectRoot, 'www', 'version.js');
 
     if (!fs.existsSync(sourceFile)) {
         console.error('ERROR: version.json not found in project root');
         process.exit(1);
     }
 
-    console.log('Copying version.json to www/');
-    fs.copyFileSync(sourceFile, destFile);
-    console.log('version.json copied successfully');
+    console.log('Converting version.json to version.js...');
+    const versionData = fs.readFileSync(sourceFile, 'utf8');
+    const versionJs = `// Auto-generated version file\nwindow.APP_VERSION = ${versionData};\n`;
+
+    fs.writeFileSync(destFile, versionJs);
+    console.log('version.js created successfully');
 };
