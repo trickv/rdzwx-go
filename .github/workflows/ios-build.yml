@@ -140,6 +140,16 @@ jobs:
           tail -200 /tmp/cordova-build-output.log > /tmp/build-logs/build-output-tail.txt
         fi
 
+        # Output error to workflow summary (publicly viewable)
+        if [ -f /tmp/cordova-build-output.log ]; then
+          echo "## 🔴 iOS Build Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Last 100 lines of build output:" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+          tail -100 /tmp/cordova-build-output.log >> $GITHUB_STEP_SUMMARY 2>/dev/null || echo "Could not read build output" >> $GITHUB_STEP_SUMMARY
+          echo '```' >> $GITHUB_STEP_SUMMARY
+        fi
+
         echo "Logs captured to /tmp/build-logs"
         ls -la /tmp/build-logs
 
