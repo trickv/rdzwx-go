@@ -75,7 +75,7 @@ jobs:
         npm install
         npm install jetifier && npx jetifier
         cordova platform add android
-        cordova plugin add ../rdzwx-plugin/
+        cordova plugin add ../rdzwx-plugin/ --nofetch
         cordova build android --debug
 
     - name: Upload APK
@@ -115,7 +115,7 @@ jobs:
       run: |
         npm install
         cordova platform add ios --verbose
-        cordova plugin add ../rdzwx-plugin/ --verbose
+        cordova plugin add ../rdzwx-plugin/ --nofetch --verbose
         cordova prepare ios --verbose
         cordova build ios --emulator --verbose
 

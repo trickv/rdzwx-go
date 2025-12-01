@@ -57,7 +57,7 @@ jobs:
     - name: Add custom plugin
       working-directory: ./rdzwx-go
       run: |
-        cordova plugin add ../rdzwx-plugin/ || cordova plugin remove com.rdzwx.plugin && cordova plugin add ../rdzwx-plugin/
+        cordova plugin add ../rdzwx-plugin/ --nofetch || cordova plugin remove com.rdzwx.plugin && cordova plugin add ../rdzwx-plugin/ --nofetch
 
     - name: Verify Cordova requirements
       working-directory: ./rdzwx-go

@@ -65,10 +65,10 @@ jobs:
       working-directory: ./rdzwx-go
       run: |
         echo "=== Adding custom plugin ==="
-        cordova plugin add ../rdzwx-plugin/ --verbose || {
+        cordova plugin add ../rdzwx-plugin/ --nofetch --verbose || {
           echo "First attempt failed, trying to remove and re-add...";
           cordova plugin remove com.rdzwx.plugin 2>/dev/null || true;
-          cordova plugin add ../rdzwx-plugin/ --verbose;
+          cordova plugin add ../rdzwx-plugin/ --nofetch --verbose;
         }
         cordova plugin ls
 

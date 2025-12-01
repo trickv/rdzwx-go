@@ -40,7 +40,7 @@ jobs:
         npm install
         npm install jetifier && npx jetifier
         cordova platform add android
-        cordova plugin add ../rdzwx-plugin/
+        cordova plugin add ../rdzwx-plugin/ --nofetch
         cordova build android --debug
 
     - name: Enable KVM (for faster emulator)
@@ -172,7 +172,7 @@ jobs:
       run: |
         npm install
         cordova platform add ios
-        cordova plugin add ../rdzwx-plugin/
+        cordova plugin add ../rdzwx-plugin/ --nofetch
         cordova prepare ios
         cordova build ios --emulator
 
