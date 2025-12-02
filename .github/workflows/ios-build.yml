@@ -54,6 +54,12 @@ jobs:
         echo "=== Installing npm dependencies ==="
         npm install || { echo "npm install failed"; exit 1; }
 
+    - name: Prepare package.json for local plugin
+      working-directory: ./rdzwx-go
+      run: |
+        # Remove plugin from package.json to prevent auto-fetch from npm during platform add
+        node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+
     - name: Add iOS platform
       working-directory: ./rdzwx-go
       run: |

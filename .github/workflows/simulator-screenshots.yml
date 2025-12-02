@@ -39,6 +39,8 @@ jobs:
       run: |
         npm install
         npm install jetifier && npx jetifier
+        # Remove plugin from package.json to prevent auto-fetch from npm during platform add
+        node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
         cordova platform add android
         cordova plugin add ../rdzwx-plugin/ --nofetch
         cordova build android --debug
@@ -171,6 +173,8 @@ jobs:
       working-directory: ./rdzwx-go
       run: |
         npm install
+        # Remove plugin from package.json to prevent auto-fetch from npm during platform add
+        node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
         cordova platform add ios
         cordova plugin add ../rdzwx-plugin/ --nofetch
         cordova prepare ios
