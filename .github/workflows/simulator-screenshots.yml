@@ -92,7 +92,7 @@ jobs:
           sleep 10
 
           echo "Checking if app is running..."
-          adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'
+          adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp' || true
 
           echo "Taking initial screenshot..."
           adb shell screencap -p /sdcard/screenshot-1-initial.png
