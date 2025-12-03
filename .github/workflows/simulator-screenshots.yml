@@ -238,42 +238,16 @@ jobs:
         echo "Waiting for app to launch..."
         sleep 10
 
-    - name: Interact with app and take screenshots
+    - name: Take screenshots
       run: |
         echo "Taking initial screenshot..."
         xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-1-initial.png
 
-        echo "Attempting UI interactions..."
+        echo "Waiting for app to fully load..."
+        sleep 5
 
-        # Tap in the center of the screen (rough coordinates for iPhone)
-        sleep 2
-        xcrun simctl io "$SIMULATOR_UDID" tap 195 400
-        sleep 3
-        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-2-after-center-tap.png
-
-        # Tap near top-right (common menu location)
-        sleep 2
-        xcrun simctl io "$SIMULATOR_UDID" tap 350 100
-        sleep 3
-        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-3-after-menu-tap.png
-
-        # Swipe gesture (left to right)
-        sleep 2
-        xcrun simctl io "$SIMULATOR_UDID" swipe 50 400 350 400
-        sleep 3
-        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-4-after-swipe.png
-
-        # Press home button to return to home screen
-        sleep 2
-        xcrun simctl io "$SIMULATOR_UDID" home
-        sleep 2
-        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-5-home-screen.png
-
-        # Relaunch app
-        sleep 2
-        xcrun simctl launch "$SIMULATOR_UDID" "$BUNDLE_ID"
-        sleep 3
-        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-6-relaunched.png
+        echo "Taking second screenshot after app loads..."
+        xcrun simctl io "$SIMULATOR_UDID" screenshot ./screenshot-2-loaded.png
 
         echo "All screenshots captured!"
         ls -lh screenshot-*.png
