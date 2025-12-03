@@ -211,7 +211,7 @@ jobs:
     - name: Install and launch app
       run: |
         # Find the .app bundle
-        APP_PATH=$(find ./rdzwx-go/platforms/ios/build/emulator -name "*.app" | head -n 1)
+        APP_PATH=$(find ./rdzwx-go/platforms/ios/build/Debug-iphonesimulator -name "*.app" | head -n 1)
 
         if [ -z "$APP_PATH" ]; then
           echo "Could not find .app bundle!"
