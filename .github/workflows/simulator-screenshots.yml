@@ -91,6 +91,9 @@ jobs:
           echo "Waiting for app to launch..."
           sleep 10
 
+          echo "Checking if app is running..."
+          adb shell dumpsys window windows | grep -E 'mCurrentFocus|mFocusedApp'
+
           echo "Taking initial screenshot..."
           adb shell screencap -p /sdcard/screenshot-1-initial.png
           adb pull /sdcard/screenshot-1-initial.png ./
@@ -102,35 +105,25 @@ jobs:
           # Get screen dimensions for reference
           adb shell wm size
 
-          echo "Attempting UI interactions..."
+          echo "Bringing app to foreground and taking screenshot 2..."
+          adb shell am start -n com.rdzwx.app/.MainActivity
+          sleep 3
+          adb shell screencap -p /sdcard/screenshot-2-refocused.png
+          adb pull /sdcard/screenshot-2-refocused.png ./
 
-          # Example: Tap in the center of the screen
+          echo "Tapping in center and taking screenshot 3..."
+          adb shell am start -n com.rdzwx.app/.MainActivity
           sleep 2
           adb shell input tap 540 960
           sleep 3
-          adb shell screencap -p /sdcard/screenshot-2-after-center-tap.png
-          adb pull /sdcard/screenshot-2-after-center-tap.png ./
+          adb shell screencap -p /sdcard/screenshot-3-after-center-tap.png
+          adb pull /sdcard/screenshot-3-after-center-tap.png ./
 
-          # Example: Tap near top-right (common menu location)
-          sleep 2
-          adb shell input tap 1000 200
+          echo "Bringing app back to foreground and taking screenshot 4..."
+          adb shell am start -n com.rdzwx.app/.MainActivity
           sleep 3
-          adb shell screencap -p /sdcard/screenshot-3-after-menu-tap.png
-          adb pull /sdcard/screenshot-3-after-menu-tap.png ./
-
-          # Example: Swipe gesture (left to right)
-          sleep 2
-          adb shell input swipe 200 960 800 960 300
-          sleep 3
-          adb shell screencap -p /sdcard/screenshot-4-after-swipe.png
-          adb pull /sdcard/screenshot-4-after-swipe.png ./
-
-          # Press back button
-          sleep 2
-          adb shell input keyevent KEYCODE_BACK
-          sleep 3
-          adb shell screencap -p /sdcard/screenshot-5-after-back.png
-          adb pull /sdcard/screenshot-5-after-back.png ./
+          adb shell screencap -p /sdcard/screenshot-4-relaunch.png
+          adb pull /sdcard/screenshot-4-relaunch.png ./
 
           echo "All screenshots captured!"
           ls -lh screenshot-*.png
