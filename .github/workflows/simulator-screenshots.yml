@@ -226,7 +226,7 @@ jobs:
         xcrun simctl install "$SIMULATOR_UDID" "$APP_PATH"
 
         # Get the bundle ID
-        BUNDLE_ID=$(defaults read "$APP_PATH/Info.plist" CFBundleIdentifier)
+        BUNDLE_ID=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$APP_PATH/Info.plist")
         echo "Bundle ID: $BUNDLE_ID"
         echo "BUNDLE_ID=$BUNDLE_ID" >> $GITHUB_ENV
 
