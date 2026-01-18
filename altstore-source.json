@@ -1,7 +1,7 @@
 {
   "name": "rdzSonde",
   "identifier": "de.dl9rdz.rdzsonde-source",
-  "sourceURL": "https://github.com/trickv/rdz/releases/latest/download/altstore-source.json",
+  "sourceURL": "https://github.com/trickv/rdzSonde/releases/latest/download/altstore-source.json",
   "apps": [
     {
       "name": "rdzSonde",
@@ -9,7 +9,7 @@
       "developerName": "Hansi Reiser (dl9rdz)",
       "subtitle": "Radiosonde tracking for weather balloons",
       "localizedDescription": "Track and visualize radiosondes (weather balloons) with real-time data from TTGO ESP32 devices. Features offline maps, GPS integration, and automatic device discovery via mDNS/Bonjour.\n\nKey Features:\n• Real-time radiosonde tracking\n• Offline map support\n• GPS location integration\n• Automatic TTGO device discovery\n• Manual IP connection support\n• WGS84 to EGM96 coordinate conversion",
-      "iconURL": "https://raw.githubusercontent.com/trickv/rdz/main/rdzwx-go/res/icon512.png",
+      "iconURL": "https://raw.githubusercontent.com/trickv/rdzSonde/main/rdzwx-go/res/icon512.png",
       "tintColor": "18bc9c",
       "category": "utilities",
       "screenshots": [],
@@ -18,7 +18,7 @@
           "version": "1.2.0pv2",
           "date": "2026-01-13T00:00:00Z",
           "size": 0,
-          "downloadURL": "https://github.com/trickv/rdz/releases/download/v1.2.0pv2/rdzSonde-v1.2.0pv2.ipa",
+          "downloadURL": "https://github.com/trickv/rdzSonde/releases/download/v1.2.0pv2/rdzSonde-v1.2.0pv2.ipa",
           "localizedDescription": "Initial AltStore release"
         }
       ],
