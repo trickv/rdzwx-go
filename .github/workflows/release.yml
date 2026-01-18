@@ -1,0 +1,198 @@
+name: Release iOS IPA with AltStore
+
+on:
+  push:
+    tags:
+      - 'v*'  # Trigger on version tags like v1.2.0
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version number (e.g., 1.2.0)'
+        required: true
+        type: string
+
+jobs:
+  release:
+    name: Build and Release iOS App
+    runs-on: macos-14
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set version variable
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+          echo "version=v${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_num=${VERSION}" >> $GITHUB_OUTPUT
+        else
+          VERSION=${GITHUB_REF#refs/tags/}
+          VERSION_NUM=${VERSION#v}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "version_num=${VERSION_NUM}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+
+    - name: Install Cordova CLI
+      run: npm install -g cordova@latest
+
+    - name: Install ios-deploy
+      run: npm install -g ios-deploy
+
+    - name: Install CocoaPods
+      run: |
+        sudo gem install cocoapods
+        pod --version
+
+    - name: Install dependencies
+      working-directory: ./rdzwx-go
+      run: npm install
+
+    - name: Prepare package.json for local plugin
+      working-directory: ./rdzwx-go
+      run: |
+        # Remove plugin from package.json to prevent auto-fetch
+        node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+
+    - name: Add iOS platform
+      working-directory: ./rdzwx-go
+      run: |
+        cordova platform add ios --verbose
+        cordova platform ls
+
+    - name: Add custom plugin
+      working-directory: ./rdzwx-go
+      run: |
+        cordova plugin add ../rdzwx-plugin/ --nofetch --verbose
+        cordova plugin ls
+
+    - name: Prepare iOS platform
+      working-directory: ./rdzwx-go
+      run: cordova prepare ios --verbose
+
+    - name: Build iOS for device (Release, unsigned)
+      working-directory: ./rdzwx-go
+      run: cordova build ios --release --device --verbose
+
+    - name: Create IPA from app bundle
+      working-directory: ./rdzwx-go
+      run: |
+        echo "=== Creating IPA ==="
+        # Find the built .app bundle
+        APP_PATH=$(find platforms/ios/build -name "rdzSonde.app" -type d | head -1)
+
+        if [ -z "$APP_PATH" ]; then
+          echo "Error: Could not find rdzSonde.app"
+          find platforms/ios/build -name "*.app" -type d
+          exit 1
+        fi
+
+        echo "Found app at: $APP_PATH"
+
+        # Create Payload directory structure for IPA
+        mkdir -p Payload
+        cp -R "$APP_PATH" Payload/
+
+        # Create IPA (which is just a zip file with specific structure)
+        zip -r rdzSonde-${{ steps.version.outputs.version }}.ipa Payload/
+
+        # Move IPA to a known location
+        mv rdzSonde-${{ steps.version.outputs.version }}.ipa ../
+
+        echo "Created IPA for AltStore"
+        ls -lh ../rdzSonde-${{ steps.version.outputs.version }}.ipa
+
+    - name: Generate AltStore source JSON
+      run: |
+        IPA_FILE="rdzSonde-${{ steps.version.outputs.version }}.ipa"
+        IPA_SIZE=$(stat -f%z "$IPA_FILE")
+        DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+        VERSION="${{ steps.version.outputs.version }}"
+        VERSION_NUM="${{ steps.version.outputs.version_num }}"
+
+        cat > altstore-source.json << EOF
+        {
+          "name": "rdzSonde",
+          "identifier": "de.dl9rdz.rdzsonde-source",
+          "sourceURL": "https://github.com/trickv/rdz/releases/latest/download/altstore-source.json",
+          "apps": [
+            {
+              "name": "rdzSonde",
+              "bundleIdentifier": "de.dl9rdz",
+              "developerName": "Hansi Reiser (dl9rdz)",
+              "subtitle": "Radiosonde tracking for weather balloons",
+              "localizedDescription": "Track and visualize radiosondes (weather balloons) with real-time data from TTGO ESP32 devices. Features offline maps, GPS integration, and automatic device discovery.",
+              "iconURL": "https://raw.githubusercontent.com/trickv/rdz/main/rdzwx-go/res/icon512.png",
+              "tintColor": "18bc9c",
+              "category": "utilities",
+              "screenshots": [],
+              "versions": [
+                {
+                  "version": "${VERSION_NUM}",
+                  "date": "${DATE}",
+                  "size": ${IPA_SIZE},
+                  "downloadURL": "https://github.com/trickv/rdz/releases/download/${VERSION}/${IPA_FILE}",
+                  "localizedDescription": "Release ${VERSION_NUM}"
+                }
+              ],
+              "appPermissions": {
+                "entitlements": [],
+                "privacy": [
+                  {
+                    "name": "LocalNetwork",
+                    "usageDescription": "Used to discover and connect to TTGO radiosonde receivers on your local network"
+                  },
+                  {
+                    "name": "Location",
+                    "usageDescription": "Used to display your current location on the map and calculate distances to radiosondes"
+                  }
+                ]
+              }
+            }
+          ],
+          "news": []
+        }
+        EOF
+
+        echo "Generated altstore-source.json:"
+        cat altstore-source.json
+
+    - name: Create GitHub Release
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          rdzSonde-${{ steps.version.outputs.version }}.ipa
+          altstore-source.json
+        body: |
+          ## rdzSonde ${{ steps.version.outputs.version_num }}
+
+          ### Installation Options
+
+          **Option 1: AltStore Source (Recommended)**
+          1. Open AltStore on your iOS device
+          2. Go to the "Sources" tab
+          3. Add this URL: `https://github.com/trickv/rdz/releases/latest/download/altstore-source.json`
+          4. Install rdzSonde from your new source
+
+          **Option 2: Direct IPA Download**
+          1. Download the IPA file below
+          2. Open it in AltStore or use AltServer to sideload
+
+          ### What's New
+          - See CHANGELOG.md for details
+
+          ### Files
+          - `rdzSonde-${{ steps.version.outputs.version }}.ipa` - iOS app package
+          - `altstore-source.json` - AltStore repository configuration
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
