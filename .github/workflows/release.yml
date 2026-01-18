@@ -167,34 +167,37 @@ jobs:
         echo "Generated altstore-source.json:"
         cat altstore-source.json
 
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v1
+    - name: Upload IPA as artifact
+      uses: actions/upload-artifact@v4
       with:
-        files: |
+        name: release-artifacts
+        path: |
           rdzSonde-${{ steps.version.outputs.version }}.ipa
           altstore-source.json
-        body: |
-          ## rdzSonde ${{ steps.version.outputs.version_num }}
 
-          ### Installation Options
+    - name: Create GitHub Release
+      run: |
+        gh release create "${{ steps.version.outputs.version }}" \
+          rdzSonde-${{ steps.version.outputs.version }}.ipa \
+          altstore-source.json \
+          --title "rdzSonde ${{ steps.version.outputs.version_num }}" \
+          --notes "## Installation Options
 
-          **Option 1: AltStore Source (Recommended)**
-          1. Open AltStore on your iOS device
-          2. Go to the "Sources" tab
-          3. Add this URL: `https://github.com/trickv/rdzSonde/releases/latest/download/altstore-source.json`
-          4. Install rdzSonde from your new source
+**Option 1: AltStore Source (Recommended)**
+1. Open AltStore on your iOS device
+2. Go to the \"Sources\" tab
+3. Add this URL: \`https://github.com/trickv/rdzSonde/releases/latest/download/altstore-source.json\`
+4. Install rdzSonde from your new source
 
-          **Option 2: Direct IPA Download**
-          1. Download the IPA file below
-          2. Open it in AltStore or use AltServer to sideload
+**Option 2: Direct IPA Download**
+1. Download the IPA file below
+2. Open it in AltStore or use AltServer to sideload
 
-          ### What's New
-          - See CHANGELOG.md for details
+### What's New
+- See CHANGELOG.md for details
 
-          ### Files
-          - `rdzSonde-${{ steps.version.outputs.version }}.ipa` - iOS app package
-          - `altstore-source.json` - AltStore repository configuration
-        draft: false
-        prerelease: false
+### Files
+- \`rdzSonde-${{ steps.version.outputs.version }}.ipa\` - iOS app package
+- \`altstore-source.json\` - AltStore repository configuration"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
