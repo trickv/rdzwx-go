@@ -181,12 +181,13 @@ jobs:
           rdzSonde-${{ steps.version.outputs.version }}.ipa \
           altstore-source.json \
           --title "rdzSonde ${{ steps.version.outputs.version_num }}" \
-          --notes "## Installation Options
+          --notes "$(cat <<'NOTES'
+## Installation Options
 
 **Option 1: AltStore Source (Recommended)**
 1. Open AltStore on your iOS device
-2. Go to the \"Sources\" tab
-3. Add this URL: \`https://github.com/trickv/rdzSonde/releases/latest/download/altstore-source.json\`
+2. Go to the "Sources" tab
+3. Add this URL: https://github.com/trickv/rdzSonde/releases/latest/download/altstore-source.json
 4. Install rdzSonde from your new source
 
 **Option 2: Direct IPA Download**
@@ -197,7 +198,9 @@ jobs:
 - See CHANGELOG.md for details
 
 ### Files
-- \`rdzSonde-${{ steps.version.outputs.version }}.ipa\` - iOS app package
-- \`altstore-source.json\` - AltStore repository configuration"
+- rdzSonde-${{ steps.version.outputs.version }}.ipa - iOS app package
+- altstore-source.json - AltStore repository configuration
+NOTES
+)"
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
