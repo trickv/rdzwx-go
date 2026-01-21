@@ -23,7 +23,9 @@
         }
       ],
       "appPermissions": {
-        "entitlements": [],
+        "entitlements": [
+          "get-task-allow"
+        ],
         "privacy": [
           {
             "name": "LocalNetwork",
@@ -32,6 +34,10 @@
           {
             "name": "Location",
             "usageDescription": "Used to display your current location on the map and calculate distances to radiosondes"
+          },
+          {
+            "name": "NSLocationAlwaysAndWhenInUse",
+            "usageDescription": "This app needs location access to track GPS position and share with TTGO devices."
           }
         ]
       }
