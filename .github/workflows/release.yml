@@ -166,19 +166,19 @@ jobs:
               ],
               "appPermissions": {
                 "entitlements": [
-                  "get-task-allow"
+                  "com.apple.security.get-task-allow"
                 ],
                 "privacy": [
                   {
-                    "name": "LocalNetwork",
+                    "name": "NSLocalNetworkUsageDescription",
                     "usageDescription": "Used to discover and connect to TTGO radiosonde receivers on your local network"
                   },
                   {
-                    "name": "LocationWhenInUse",
+                    "name": "NSLocationWhenInUseUsageDescription",
                     "usageDescription": "Used to display your current location on the map and calculate distances to radiosondes"
                   },
                   {
-                    "name": "LocationAlways",
+                    "name": "NSLocationAlwaysAndWhenInUseUsageDescription",
                     "usageDescription": "This app needs location access to track GPS position and share with TTGO devices."
                   }
                 ]
