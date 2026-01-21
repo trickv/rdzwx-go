@@ -55,6 +55,22 @@ jobs:
         sudo gem install cocoapods
         pod --version
 
+    - name: Update app version
+      working-directory: ./rdzwx-go
+      run: |
+        VERSION_NUM="${{ steps.version.outputs.version_num }}"
+        echo "Updating version to ${VERSION_NUM}"
+
+        # Update config.xml
+        sed -i.bak "s/version=\"[^\"]*\"/version=\"${VERSION_NUM}\"/" config.xml
+
+        # Update package.json
+        node -e "const pkg=require('./package.json'); pkg.version='${VERSION_NUM}'; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
+
+        echo "Updated versions:"
+        grep "version=" config.xml | head -1
+        grep '"version"' package.json | head -1
+
     - name: Install dependencies
       working-directory: ./rdzwx-go
       run: npm install
