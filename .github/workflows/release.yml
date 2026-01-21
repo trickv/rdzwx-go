@@ -174,11 +174,11 @@ jobs:
                     "usageDescription": "Used to discover and connect to TTGO radiosonde receivers on your local network"
                   },
                   {
-                    "name": "Location",
+                    "name": "LocationWhenInUse",
                     "usageDescription": "Used to display your current location on the map and calculate distances to radiosondes"
                   },
                   {
-                    "name": "NSLocationAlwaysAndWhenInUse",
+                    "name": "LocationAlways",
                     "usageDescription": "This app needs location access to track GPS position and share with TTGO devices."
                   }
                 ]
