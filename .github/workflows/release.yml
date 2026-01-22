@@ -24,6 +24,7 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: recursive
+        fetch-depth: 0  # Fetch all history and tags for changelog generation
 
     - name: Set version variable
       id: version
@@ -147,6 +148,43 @@ jobs:
         echo "Created IPA for AltStore"
         ls -lh ../rdzSonde-${{ steps.version.outputs.version }}.ipa
 
+    - name: Generate changelog
+      id: changelog
+      run: |
+        VERSION="${{ steps.version.outputs.version }}"
+
+        # Fetch all tags to ensure we have them
+        git fetch --tags
+
+        # Get previous tag (excluding current version)
+        PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -1)
+
+        echo "Current version: ${VERSION}"
+        echo "Previous version: ${PREV_TAG}"
+
+        if [ -z "$PREV_TAG" ]; then
+          echo "changelog=Initial release" >> $GITHUB_OUTPUT
+        else
+          # Get commits since last tag, format them nicely
+          # Remove Co-Authored-By lines and empty lines
+          CHANGELOG=$(git log ${PREV_TAG}..${VERSION} --pretty=format:"- %s" --no-merges | grep -v "Co-Authored-By:" | grep -v "^$" | sed 's/[[:space:]]*$//')
+
+          # If no changelog, use a default message
+          if [ -z "$CHANGELOG" ]; then
+            CHANGELOG="Bug fixes and improvements"
+          fi
+
+          # Output for GitHub (multiline)
+          {
+            echo 'changelog<<EOF'
+            echo "$CHANGELOG"
+            echo EOF
+          } >> $GITHUB_OUTPUT
+        fi
+
+        echo "Generated changelog:"
+        cat $GITHUB_OUTPUT | grep -A100 "changelog" || true
+
     - name: Generate AltStore source JSON
       run: |
         IPA_FILE="rdzSonde-${{ steps.version.outputs.version }}.ipa"
@@ -154,6 +192,9 @@ jobs:
         DATE=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
         VERSION="${{ steps.version.outputs.version }}"
         VERSION_NUM="${{ steps.version.outputs.version_num }}"
+
+        # Escape changelog for JSON (convert newlines and special chars)
+        CHANGELOG=$(echo '${{ steps.changelog.outputs.changelog }}' | jq -Rs .)
 
         cat > altstore-source.json << EOF
         {
@@ -177,7 +218,7 @@ jobs:
                   "date": "${DATE}",
                   "size": ${IPA_SIZE},
                   "downloadURL": "https://github.com/trickv/rdzSonde/releases/download/${VERSION}/${IPA_FILE}",
-                  "localizedDescription": "Release ${VERSION_NUM}"
+                  "localizedDescription": ${CHANGELOG}
                 }
               ],
               "appPermissions": {
@@ -209,7 +250,12 @@ jobs:
 
     - name: Create GitHub Release
       run: |
-        cat > release-notes.md << 'EOF'
+        cat > release-notes.md << EOF
+        ## rdzSonde ${{ steps.version.outputs.version_num }}
+
+        ### What's Changed
+        ${{ steps.changelog.outputs.changelog }}
+
         ## Installation Options
 
         **Option 1: AltStore Source (Recommended)**
@@ -222,8 +268,9 @@ jobs:
         1. Download the IPA file below
         2. Open it in AltStore or use AltServer to sideload
 
-        ### What's New
-        - See CHANGELOG.md for details
+        ### Requirements
+        - iOS 13.0 or later
+        - AltStore installed on your device
         EOF
 
         gh release create "${{ steps.version.outputs.version }}" \
