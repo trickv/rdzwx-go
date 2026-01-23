@@ -663,30 +663,28 @@ function getPrediction(refobj) {
     } else {
       tParams["descent_rate"] = usecurrent ? calc_drag( -vs, refobj.obj.alt, desc ) : desc;
     }
-    const xhr = new XMLHttpRequest();
     const url = TAWHIRI + formatParams(tParams);
-    xhr.onreadystatechange = function() {
-        if(xhr.readyState === 4) { 
-	    if( (xhr.status/100)!=2 ) {
-		alert("Request failed: "+xhr.statusText);
-		return;
-	    }
-	    var pred = JSON.parse(xhr.response);
+    console.log("getPrediction: fetching " + url);
+
+    RdzWx.fetchUrl(url, function(response) {
+        // Success callback
+        try {
+            var pred = JSON.parse(response);
             var traj0 = pred.prediction[0].trajectory;  // 0 is ascent, 1 is descent...
             var traj1 = pred.prediction[1].trajectory;  // 0 is ascent, 1 is descent...
-	    var latlons = [];
-	    traj0.forEach( p => latlons.push( [p.latitude, wrap(p.longitude)] ) );
-	    traj1.forEach( p => latlons.push( [p.latitude, wrap(p.longitude)] ) );
-	    //alert("path: "+JSON.stringify(traj));
-      	    poly = L.polyline(latlons, { opacity: 0.7, color: '#EE0000', dashArray: '8, 6'} );
+            var latlons = [];
+            traj0.forEach( p => latlons.push( [p.latitude, wrap(p.longitude)] ) );
+            traj1.forEach( p => latlons.push( [p.latitude, wrap(p.longitude)] ) );
+            //alert("path: "+JSON.stringify(traj));
+            poly = L.polyline(latlons, { opacity: 0.7, color: '#EE0000', dashArray: '8, 6'} );
             poly.addTo(map);
-	    if( refobj.pred  ) { refobj.pred.remove(map); }
+            if( refobj.pred  ) { refobj.pred.remove(map); }
             refobj.pred = poly;
-	    if( refobj.land ) { refobj.land.remove(map); }
-	    refobj.land = new L.marker(latlons.slice(-1)[0], {icon: landingIcon,
+            if( refobj.land ) { refobj.land.remove(map); }
+            refobj.land = new L.marker(latlons.slice(-1)[0], {icon: landingIcon,
               contextmenu: true,
               contextmenuItems: [{
-	        text: "Zoom to location",
+                text: "Zoom to location",
                 callback: function(e) { b=new L.LatLngBounds([refobj.land.getLatLng()]); map.fitBounds(b, {maxZoom: 16}); }
               }, {
                 separator: true
@@ -695,29 +693,32 @@ function getPrediction(refobj) {
                 callback: function(e) { ll=refobj.land.getLatLng(); uri="geo:0:0?q="+ll.lat+","+ll.lng+"(X-"+refobj.obj.id+")"; RdzWx.showmap(uri, function(){}); }
               }]
             });
-	    refobj.land.addTo(map);
+            refobj.land.addTo(map);
 
-	    if( refobj.burst ) { refobj.burst.remove(map); }
-	    if( vs>0 ) { // still climbing, so add burst mark
-	       var b = traj0.slice(-1)[0];
-	       refobj.burst = new L.marker( [b.latitude, b.longitude], {icon: burstIcon});
+            if( refobj.burst ) { refobj.burst.remove(map); }
+            if( vs>0 ) { // still climbing, so add burst mark
+               var b = traj0.slice(-1)[0];
+               refobj.burst = new L.marker( [b.latitude, b.longitude], {icon: burstIcon});
                refobj.burst.addTo(map);
             }
-	    var lastpt = traj1.splice(-1)[0];
-	    lastpt.datetime = new Date(lastpt.datetime).toISOString().split(".")[0] + "Z";
-	    var popup = '<div class="pop-header"><img src="img/landing.png"><h4> Landing Point </h4></div>' +
-                       '<strong>Time: ' + lastpt.datetime + '</strong><br/>' +
-                       '<strong>(' + new Date(lastpt.datetime).toTimeString().split(" (")[0] + ')</strong><br/>' +
-                       '<p> Altitude: ' + lastpt.altitude.toFixed(1) + ' m'+ 
-                       '</br>Asc. Rate: ' + tParams["ascent_rate"].toFixed(2)  + ' m/s'+
-                       '</br>Burst: ' + tParams["burst_altitude"]  + ' m'+
-                       '</br>Desc. Rate: ' + tParams["descent_rate"].toFixed(2) + ' m/s</p>' +
-                       '';
-	    refobj.land.bindPopup(popup);
+            var lastpt = traj1.splice(-1)[0];
+            lastpt.datetime = new Date(lastpt.datetime).toISOString().split(".")[0] + "Z";
+            var popup = '<div class="pop-header"><img src="img/landing.png"><h4> Landing Point </h4></div>' +
+                           '<strong>Time: ' + lastpt.datetime + '</strong><br/>' +
+                           '<strong>(' + new Date(lastpt.datetime).toTimeString().split(" (")[0] + ')</strong><br/>' +
+                           '<p> Altitude: ' + lastpt.altitude.toFixed(1) + ' m'+
+                           '</br>Asc. Rate: ' + tParams["ascent_rate"].toFixed(2)  + ' m/s'+
+                           '</br>Burst: ' + tParams["burst_altitude"]  + ' m'+
+                           '</br>Desc. Rate: ' + tParams["descent_rate"].toFixed(2) + ' m/s</p>' +
+                           '';
+            refobj.land.bindPopup(popup);
+        } catch(e) {
+            alert("Failed to parse prediction response: " + e.message);
         }
-    }
-    xhr.open('GET', url, true);
-    xhr.send(null);
+    }, function(error) {
+        // Error callback
+        alert("Prediction request failed: " + error);
+    });
 }
 
 function callBack(arg) {
