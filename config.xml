@@ -31,6 +31,13 @@
     </platform>
     <icon src="res/icon512.png"/>
     <platform name="ios">
+        <!-- Allow HTTP connections to TTGO devices (equivalent to Android's usesCleartextTraffic) -->
+        <edit-config file="*-Info.plist" mode="merge" target="NSAppTransportSecurity">
+            <dict>
+                <key>NSAllowsArbitraryLoads</key>
+                <true/>
+            </dict>
+        </edit-config>
         <!-- iPhone icons -->
         <icon src="res/ios/icon-20@2x.png" width="40" height="40" />
         <icon src="res/ios/icon-20@3x.png" width="60" height="60" />
