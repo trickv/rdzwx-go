@@ -153,8 +153,8 @@ jobs:
       run: |
         VERSION="${{ steps.version.outputs.version }}"
 
-        # Fetch all tags to ensure we have them
-        git fetch --tags
+        # Fetch all tags to ensure we have them (force to handle re-tagged versions)
+        git fetch --tags --force
 
         # Get previous tag (excluding current version)
         PREV_TAG=$(git tag --sort=-version:refname | grep -v "^${VERSION}$" | head -1)
