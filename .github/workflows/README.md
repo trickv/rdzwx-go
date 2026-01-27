@@ -194,7 +194,7 @@ Before pushing, test locally:
 cd rdzwx-go
 npm install
 cordova platform add android
-cordova plugin add ../rdzwx-plugin/
+cordova plugin add plugin-src/rdzwx-plugin/
 cordova build android
 
 # Security checks

@@ -24,7 +24,7 @@ jobs:
         node-version: '20'
 
     - name: Install and audit dependencies
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         npm install
         # Only check production dependencies for high/critical vulnerabilities
@@ -33,7 +33,7 @@ jobs:
       continue-on-error: true
 
     - name: Check for security patterns
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         ! grep -r "\beval\(" www/ || (echo "ERROR: eval() usage found!" && exit 1)
         echo "Security checks passed"
@@ -70,7 +70,7 @@ jobs:
       run: sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
     - name: Build Android
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         npm install
         npm install jetifier && npx jetifier
@@ -78,14 +78,14 @@ jobs:
         node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
         cordova platform add android
         # Now add the local plugin with --nofetch
-        cordova plugin add ../rdzwx-plugin/ --nofetch
+        cordova plugin add plugin-src/rdzwx-plugin/ --nofetch
         cordova build android --debug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
       with:
         name: android-apk-full-ci
-        path: rdzwx-go/platforms/android/app/build/outputs/apk/debug/*.apk
+        path: platforms/android/app/build/outputs/apk/debug/*.apk
         retention-days: 14
 
   ios-test:
@@ -114,14 +114,14 @@ jobs:
       run: sudo gem install cocoapods
 
     - name: Build iOS
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         npm install
         # Remove plugin from package.json to prevent auto-fetch from npm during platform add
         node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
         cordova platform add ios --verbose
         # Now add the local plugin with --nofetch
-        cordova plugin add ../rdzwx-plugin/ --nofetch --verbose
+        cordova plugin add plugin-src/rdzwx-plugin/ --nofetch --verbose
         cordova prepare ios --verbose
         cordova build ios --emulator --verbose
 
@@ -129,7 +129,7 @@ jobs:
       uses: actions/upload-artifact@v4
       with:
         name: ios-app-full-ci
-        path: rdzwx-go/platforms/ios/build/emulator/*.app
+        path: platforms/ios/build/emulator/*.app
         if-no-files-found: warn
         retention-days: 14
 

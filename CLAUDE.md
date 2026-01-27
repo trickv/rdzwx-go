@@ -28,7 +28,7 @@ cordova run android --device    # Deploy to Android device
 cordova run ios --device        # Deploy to iOS device (requires Xcode on macOS)
 cordova platform add android    # Add Android platform
 cordova platform add ios        # Add iOS platform
-cordova plugin add ../rdzwx-plugin/  # Add custom plugin
+cordova plugin add plugin-src/rdzwx-plugin/  # Add custom plugin
 ```
 
 ### Development Setup
@@ -101,7 +101,7 @@ emulator -avd <avd_name> -gpu host
 ```bash
 # After making changes to iOS plugin code in rdzwx-plugin/
 cd rdzwx-go
-cordova plugin remove de-dl9rdz-rdzwx && cordova plugin add ../rdzwx-plugin/
+cordova plugin remove de-dl9rdz-rdzwx && cordova plugin add plugin-src/rdzwx-plugin/
 cordova build ios    # Rebuild iOS app with updated plugin
 # Then test in Xcode or simulator
 ```

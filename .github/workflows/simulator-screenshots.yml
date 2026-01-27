@@ -35,14 +35,14 @@ jobs:
       run: npm install -g cordova
 
     - name: Build Android App
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         npm install
         npm install jetifier && npx jetifier
         # Remove plugin from package.json to prevent auto-fetch from npm during platform add
         node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
         cordova platform add android
-        cordova plugin add ../rdzwx-plugin/ --nofetch
+        cordova plugin add plugin-src/rdzwx-plugin/ --nofetch
         cordova build android --debug
 
     - name: Enable KVM (for faster emulator)
@@ -83,7 +83,7 @@ jobs:
         disable-animations: true
         script: |
           echo "Installing APK..."
-          adb install ./rdzwx-go/platforms/android/app/build/outputs/apk/debug/app-debug.apk
+          adb install ./platforms/android/app/build/outputs/apk/debug/app-debug.apk
 
           echo "Launching app..."
           adb shell am start -n de.dl9rdz/.MainActivity
@@ -163,13 +163,13 @@ jobs:
       run: sudo gem install cocoapods
 
     - name: Build iOS App
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         npm install
         # Remove plugin from package.json to prevent auto-fetch from npm during platform add
         node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
         cordova platform add ios
-        cordova plugin add ../rdzwx-plugin/ --nofetch
+        cordova plugin add plugin-src/rdzwx-plugin/ --nofetch
         cordova prepare ios
         cordova build ios --emulator
 
@@ -204,11 +204,11 @@ jobs:
     - name: Install and launch app
       run: |
         # Find the .app bundle
-        APP_PATH=$(find ./rdzwx-go/platforms/ios/build/Debug-iphonesimulator -name "*.app" | head -n 1)
+        APP_PATH=$(find ./platforms/ios/build/Debug-iphonesimulator -name "*.app" | head -n 1)
 
         if [ -z "$APP_PATH" ]; then
           echo "Could not find .app bundle!"
-          ls -la ./rdzwx-go/platforms/ios/build/
+          ls -la ./platforms/ios/build/
           exit 1
         fi
 

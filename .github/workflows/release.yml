@@ -57,7 +57,7 @@ jobs:
         pod --version
 
     - name: Update app version
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         VERSION_NUM="${{ steps.version.outputs.version_num }}"
         echo "Updating version to ${VERSION_NUM}"
@@ -73,33 +73,33 @@ jobs:
         grep '"version"' package.json | head -1
 
     - name: Install dependencies
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: npm install
 
     - name: Prepare package.json for local plugin
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         # Remove plugin from package.json to prevent auto-fetch
         node -e "const pkg=require('./package.json'); delete pkg.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(pkg, null, 2));"
 
     - name: Add iOS platform
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         cordova platform add ios --verbose
         cordova platform ls
 
     - name: Add custom plugin
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
-        cordova plugin add ../rdzwx-plugin/ --nofetch --verbose
+        cordova plugin add plugin-src/rdzwx-plugin/ --nofetch --verbose
         cordova plugin ls
 
     - name: Prepare iOS platform
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: cordova prepare ios --verbose
 
     - name: Build iOS for device (Release, unsigned)
-      working-directory: ./rdzwx-go/platforms/ios
+      working-directory: ./platforms/ios
       run: |
         # Build using xcodebuild directly with signing disabled
         xcodebuild -workspace rdzSonde.xcworkspace \
@@ -114,7 +114,7 @@ jobs:
           build
 
     - name: Create IPA from app bundle
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         echo "=== Creating IPA from device build ==="
 
@@ -208,7 +208,7 @@ jobs:
               "developerName": "Hansi Reiser (dl9rdz)",
               "subtitle": "Radiosonde tracking for weather balloons",
               "localizedDescription": "Track and visualize radiosondes (weather balloons) with real-time data from TTGO ESP32 devices. Features offline maps, GPS integration, and automatic device discovery.",
-              "iconURL": "https://raw.githubusercontent.com/trickv/rdzSonde/main/rdzwx-go/res/icon512.png",
+              "iconURL": "https://raw.githubusercontent.com/trickv/rdzSonde/main/./res/icon512.png",
               "tintColor": "18bc9c",
               "category": "utilities",
               "screenshots": [],

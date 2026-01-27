@@ -134,7 +134,7 @@ All workflows automatically:
 **Android:**
 ```bash
 cordova platform add android
-cordova plugin add ../rdzwx-plugin/
+cordova plugin add plugin-src/rdzwx-plugin/
 cordova build android --debug
 cordova build android --release
 ```
@@ -142,7 +142,7 @@ cordova build android --release
 **iOS:**
 ```bash
 cordova platform add ios
-cordova plugin add ../rdzwx-plugin/
+cordova plugin add plugin-src/rdzwx-plugin/
 cordova build ios --emulator
 cordova build ios --device --release
 ```
@@ -215,7 +215,7 @@ git submodule update --init --recursive
 cd rdzwx-go
 npm install
 cordova platform add android
-cordova plugin add ../rdzwx-plugin/
+cordova plugin add plugin-src/rdzwx-plugin/
 cordova build android
 
 # Test iOS build (macOS only)

@@ -28,11 +28,11 @@ jobs:
         node-version: '20'
 
     - name: Install dependencies (main project)
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: npm install --package-lock-only || npm install
 
     - name: Run npm audit (main project)
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         echo "=== NPM Audit Report for rdzwx-go ==="
         echo "Checking production dependencies only (dev dependencies are part of Cordova toolchain)..."
@@ -52,7 +52,7 @@ jobs:
       continue-on-error: true
 
     - name: Check for outdated dependencies
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         echo "=== Outdated Dependencies Report ==="
         npm outdated || true
@@ -84,11 +84,11 @@ jobs:
         node-version: '20'
 
     - name: Install dependencies
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: npm install
 
     - name: JavaScript/HTML syntax check
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         echo "=== JavaScript Syntax Check ==="
         find www -name "*.js" -type f | while read file; do
@@ -97,7 +97,7 @@ jobs:
         done
 
     - name: Check for common security issues
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         echo "=== Security Pattern Check ==="
         echo "Checking for console.log in production code..."
@@ -114,7 +114,7 @@ jobs:
       continue-on-error: true
 
     - name: Check XML syntax (config.xml)
-      working-directory: ./rdzwx-go
+      working-directory: .
       run: |
         echo "=== XML Syntax Check ==="
         if command -v xmllint &> /dev/null; then
