@@ -200,7 +200,7 @@ jobs:
         {
           "name": "rdzSonde",
           "identifier": "de.dl9rdz.rdzsonde-source",
-          "sourceURL": "https://github.com/trickv/rdzSonde/releases/latest/download/altstore-source.json",
+          "sourceURL": "https://github.com/trickv/rdzwx-go/releases/latest/download/altstore-source.json",
           "apps": [
             {
               "name": "rdzSonde",
@@ -208,7 +208,7 @@ jobs:
               "developerName": "Hansi Reiser (dl9rdz)",
               "subtitle": "Radiosonde tracking for weather balloons",
               "localizedDescription": "Track and visualize radiosondes (weather balloons) with real-time data from TTGO ESP32 devices. Features offline maps, GPS integration, and automatic device discovery.",
-              "iconURL": "https://raw.githubusercontent.com/trickv/rdzSonde/main/./res/icon512.png",
+              "iconURL": "https://raw.githubusercontent.com/trickv/rdzwx-go/main/./res/icon512.png",
               "tintColor": "18bc9c",
               "category": "utilities",
               "screenshots": [],
@@ -217,7 +217,7 @@ jobs:
                   "version": "${VERSION_NUM}",
                   "date": "${DATE}",
                   "size": ${IPA_SIZE},
-                  "downloadURL": "https://github.com/trickv/rdzSonde/releases/download/${VERSION}/${IPA_FILE}",
+                  "downloadURL": "https://github.com/trickv/rdzwx-go/releases/download/${VERSION}/${IPA_FILE}",
                   "localizedDescription": ${CHANGELOG}
                 }
               ],
@@ -261,7 +261,7 @@ jobs:
         **Option 1: AltStore Source (Recommended)**
         1. Open AltStore on your iOS device
         2. Go to the "Sources" tab
-        3. Add this URL: https://github.com/trickv/rdzSonde/releases/latest/download/altstore-source.json
+        3. Add this URL: https://github.com/trickv/rdzwx-go/releases/latest/download/altstore-source.json
         4. Install rdzSonde from your new source
 
         **Option 2: Direct IPA Download**
