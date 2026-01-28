@@ -142,11 +142,8 @@ jobs:
         # Create IPA (which is just a zip file with specific structure)
         zip -r rdzSonde-${{ steps.version.outputs.version }}.ipa Payload/
 
-        # Move IPA to a known location
-        mv rdzSonde-${{ steps.version.outputs.version }}.ipa ../
-
         echo "Created IPA for AltStore"
-        ls -lh ../rdzSonde-${{ steps.version.outputs.version }}.ipa
+        ls -lh rdzSonde-${{ steps.version.outputs.version }}.ipa
 
     - name: Generate changelog
       id: changelog
