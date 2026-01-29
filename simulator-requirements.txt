@@ -1,0 +1,2 @@
+# Python requirements for TTGO simulator
+zeroconf>=0.132.2
