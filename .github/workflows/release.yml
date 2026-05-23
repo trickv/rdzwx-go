@@ -284,7 +284,11 @@ jobs:
   # with the AltStore-IPA job above; both consume the same tag.
   ios-appstore:
     name: iOS → TestFlight
-    if: ${{ vars.IOS_BUNDLE_ID != '' || secrets.IOS_BUNDLE_ID != '' }}
+    # Gated on a repo variable (not a secret) because GitHub Actions does not
+    # permit `secrets.*` in job-level `if:` conditions. Forks opt in by setting
+    # the `IOS_BUNDLE_ID` repo variable; the actual signing secrets remain
+    # secrets and are mapped to env in the build step.
+    if: ${{ vars.IOS_BUNDLE_ID != '' }}
     runs-on: macos-15
 
     steps:
@@ -430,7 +434,8 @@ jobs:
   # ANDROID_PACKAGE_NAME; skips when absent.
   android-release:
     name: Android → Play Store (internal)
-    if: ${{ vars.ANDROID_PACKAGE_NAME != '' || secrets.ANDROID_PACKAGE_NAME != '' }}
+    # Gated on a repo variable; see ios-appstore for the reasoning.
+    if: ${{ vars.ANDROID_PACKAGE_NAME != '' }}
     runs-on: ubuntu-latest
 
     steps:
