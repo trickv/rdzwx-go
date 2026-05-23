@@ -12,7 +12,6 @@ default_platform(:ios)
 
 IOS_WORKSPACE = "./platforms/ios/rdzSonde.xcworkspace"
 IOS_SCHEME = "rdzSonde"
-ANDROID_PROJECT_DIR = "./platforms/android"
 
 platform :ios do
   desc "Build signed IPA and upload to TestFlight"
@@ -63,25 +62,26 @@ end
 platform :android do
   desc "Build signed AAB and upload to Google Play internal track"
   lane :beta do
-    # Cordova drives the build (it patches config.xml-derived values into the
-    # gradle module and applies build.json signing config). Calling cordova
-    # here instead of gradle directly keeps the platform-regeneration story
-    # consistent with `make release` and the existing release.yml.
-    # fastlane runs lanes with cwd set to the project root, so cordova picks
-    # up config.xml and build.json from the right place.
-    sh("cordova build android --release -- --packageType=bundle")
+    # fastlane chdir's to the fastlane/ folder before running lanes, so any
+    # raw `sh()` or `Dir[]` calls use that as their cwd. Cordova would still
+    # find the project (it climbs up for config.xml), but our own AAB glob
+    # needs to anchor at the project root. Wrap the whole lane in a chdir.
+    project_root = File.expand_path("..", __dir__)
+    Dir.chdir(project_root) do
+      sh("cordova build android --release -- --packageType=bundle")
 
-    aab_path = Dir["#{ANDROID_PROJECT_DIR}/app/build/outputs/bundle/release/*.aab"].first
-    raise "No AAB found under #{ANDROID_PROJECT_DIR}/app/build/outputs/bundle/release/" unless aab_path
+      aab_path = Dir["platforms/android/app/build/outputs/bundle/release/*.aab"].first
+      raise "No AAB found under platforms/android/app/build/outputs/bundle/release/" unless aab_path
 
-    upload_to_play_store(
-      track: "internal",
-      aab: aab_path,
-      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
-      skip_upload_metadata: true,
-      skip_upload_images: true,
-      skip_upload_screenshots: true,
-      skip_upload_apk: true,
-    )
+      upload_to_play_store(
+        track: "internal",
+        aab: File.expand_path(aab_path),
+        json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
+        skip_upload_metadata: true,
+        skip_upload_images: true,
+        skip_upload_screenshots: true,
+        skip_upload_apk: true,
+      )
+    end
   end
 end
