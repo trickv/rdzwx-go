@@ -277,3 +277,293 @@ jobs:
           --notes-file release-notes.md
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Optional: signed App Store / TestFlight build. Gated on IOS_BUNDLE_ID
+  # being set as a repo secret, so forks (and upstream) that haven't
+  # configured App Store publishing simply skip this job. Runs in parallel
+  # with the AltStore-IPA job above; both consume the same tag.
+  ios-appstore:
+    name: iOS → TestFlight
+    if: ${{ vars.IOS_BUNDLE_ID != '' || secrets.IOS_BUNDLE_ID != '' }}
+    runs-on: macos-15
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    # App Store now requires iOS 26 SDK; macos-15 runners have Xcode 26
+    # installed alongside older versions. setup-xcode pins the active one.
+    - name: Select latest stable Xcode
+      uses: maxim-lobanov/setup-xcode@v1
+      with:
+        xcode-version: 'latest-stable'
+
+    - name: Set version variable
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/}
+        fi
+        VERSION_NUM=${VERSION#v}
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "version_num=${VERSION_NUM}" >> $GITHUB_OUTPUT
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Set up Ruby (for fastlane)
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+        bundler-cache: true
+
+    - name: Install Cordova CLI
+      run: npm install -g cordova@latest
+
+    - name: Install CocoaPods
+      run: sudo gem install cocoapods
+
+    - name: Apply version + bundle-ID overrides to config.xml
+      env:
+        VERSION_NUM: ${{ steps.version.outputs.version_num }}
+        IOS_BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID }}
+        IOS_CFBUNDLE_VERSION: ${{ github.run_number }}
+      run: |
+        node <<'NODE'
+        const fs = require('fs');
+        let xml = fs.readFileSync('config.xml', 'utf8');
+        const { VERSION_NUM, IOS_BUNDLE_ID, IOS_CFBUNDLE_VERSION } = process.env;
+
+        xml = xml.replace(/version="[^"]*"/, `version="${VERSION_NUM}"`);
+        if (IOS_BUNDLE_ID) {
+          xml = xml.replace(/<widget id="[^"]*"/, `<widget id="${IOS_BUNDLE_ID}"`);
+        }
+        if (xml.match(/ios-CFBundleVersion="[^"]*"/)) {
+          xml = xml.replace(/ios-CFBundleVersion="[^"]*"/, `ios-CFBundleVersion="${IOS_CFBUNDLE_VERSION}"`);
+        } else {
+          xml = xml.replace(/(<widget [^>]*?)>/, `$1 ios-CFBundleVersion="${IOS_CFBUNDLE_VERSION}">`);
+        }
+        fs.writeFileSync('config.xml', xml);
+        console.log(xml.split('\n').slice(0, 3).join('\n'));
+        NODE
+        # package.json version stays in sync for consistency
+        node -e "const p=require('./package.json'); p.version='${VERSION_NUM}'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2));"
+
+    - name: Install JS dependencies
+      run: npm install
+
+    - name: Prepare package.json for local plugin
+      run: |
+        node -e "const p=require('./package.json'); if (p.cordova && p.cordova.plugins) delete p.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2));"
+
+    - name: Add iOS platform + plugin
+      run: |
+        cordova platform add ios --verbose
+        cordova plugin add plugin-src/rdzwx-plugin/ --nofetch --verbose
+        cordova prepare ios --verbose
+
+    - name: Import distribution certificate
+      env:
+        BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+        P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+        KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+      run: |
+        CERT_PATH=$RUNNER_TEMP/certificate.p12
+        KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+        echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o "$CERT_PATH"
+
+        security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+        security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security import "$CERT_PATH" -P "$P12_PASSWORD" -A \
+          -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
+        security set-key-partition-list -S apple-tool:,apple: \
+          -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+        security list-keychain -d user -s "$KEYCHAIN_PATH"
+
+    - name: Install provisioning profile
+      env:
+        BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+      run: |
+        PP_PATH=$RUNNER_TEMP/profile.mobileprovision
+        echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o "$PP_PATH"
+        mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+        cp "$PP_PATH" ~/Library/MobileDevice/Provisioning\ Profiles/
+
+    - name: Write App Store Connect API key
+      env:
+        ASC_API_KEY_BASE64: ${{ secrets.ASC_API_KEY_BASE64 }}
+        ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+      run: |
+        mkdir -p ~/.appstoreconnect/private_keys
+        KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_${ASC_API_KEY_ID}.p8
+        echo -n "$ASC_API_KEY_BASE64" | base64 --decode -o "$KEY_PATH"
+        echo "ASC_API_KEY_PATH=$KEY_PATH" >> $GITHUB_ENV
+
+    - name: Build & upload to TestFlight
+      env:
+        IOS_BUNDLE_ID: ${{ secrets.IOS_BUNDLE_ID }}
+        FASTLANE_APPLE_ID: ${{ secrets.FASTLANE_APPLE_ID }}
+        APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        APPLE_CODE_SIGN_IDENTITY: ${{ secrets.APPLE_CODE_SIGN_IDENTITY }}
+        APPLE_PROVISIONING_PROFILE_NAME: ${{ secrets.APPLE_PROVISIONING_PROFILE_NAME }}
+        ASC_API_KEY_ID: ${{ secrets.ASC_API_KEY_ID }}
+        ASC_API_ISSUER_ID: ${{ secrets.ASC_API_ISSUER_ID }}
+      run: bundle exec fastlane ios beta
+
+    - name: Clean up keychain and profile
+      if: always()
+      run: |
+        security delete-keychain $RUNNER_TEMP/app-signing.keychain-db 2>/dev/null || true
+        rm -f ~/Library/MobileDevice/Provisioning\ Profiles/profile.mobileprovision
+        rm -f ~/.appstoreconnect/private_keys/AuthKey_*.p8
+
+  # Optional: signed AAB → Google Play internal track. Gated on
+  # ANDROID_PACKAGE_NAME; skips when absent.
+  android-release:
+    name: Android → Play Store (internal)
+    if: ${{ vars.ANDROID_PACKAGE_NAME != '' || secrets.ANDROID_PACKAGE_NAME != '' }}
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        submodules: recursive
+
+    - name: Set version variable
+      id: version
+      run: |
+        if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        else
+          VERSION=${GITHUB_REF#refs/tags/}
+        fi
+        VERSION_NUM=${VERSION#v}
+        echo "version=${VERSION}" >> $GITHUB_OUTPUT
+        echo "version_num=${VERSION_NUM}" >> $GITHUB_OUTPUT
+
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Set up Android SDK
+      uses: android-actions/setup-android@v3
+
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Set up Ruby (for fastlane)
+      uses: ruby/setup-ruby@v1
+      with:
+        ruby-version: '3.2'
+        bundler-cache: true
+
+    - name: Install Cordova CLI
+      run: npm install -g cordova@latest
+
+    - name: Apply version + package-name overrides to config.xml
+      env:
+        VERSION_NUM: ${{ steps.version.outputs.version_num }}
+        ANDROID_PACKAGE_NAME: ${{ secrets.ANDROID_PACKAGE_NAME }}
+        ANDROID_VERSION_CODE: ${{ github.run_number }}
+      run: |
+        node <<'NODE'
+        const fs = require('fs');
+        let xml = fs.readFileSync('config.xml', 'utf8');
+        const { VERSION_NUM, ANDROID_PACKAGE_NAME, ANDROID_VERSION_CODE } = process.env;
+
+        xml = xml.replace(/version="[^"]*"/, `version="${VERSION_NUM}"`);
+        if (ANDROID_PACKAGE_NAME) {
+          xml = xml.replace(/<widget id="[^"]*"/, `<widget id="${ANDROID_PACKAGE_NAME}"`);
+        }
+        if (xml.match(/android-versionCode="[^"]*"/)) {
+          xml = xml.replace(/android-versionCode="[^"]*"/, `android-versionCode="${ANDROID_VERSION_CODE}"`);
+        } else {
+          xml = xml.replace(/(<widget [^>]*?)>/, `$1 android-versionCode="${ANDROID_VERSION_CODE}">`);
+        }
+        fs.writeFileSync('config.xml', xml);
+        console.log(xml.split('\n').slice(0, 3).join('\n'));
+        NODE
+        node -e "const p=require('./package.json'); p.version='${VERSION_NUM}'; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2));"
+
+    - name: Install JS dependencies
+      run: npm install
+
+    - name: Prepare package.json for local plugin
+      run: |
+        node -e "const p=require('./package.json'); if (p.cordova && p.cordova.plugins) delete p.cordova.plugins['de-dl9rdz-rdzwx']; require('fs').writeFileSync('package.json', JSON.stringify(p, null, 2));"
+
+    - name: Add Android platform + plugin
+      run: |
+        cordova platform add android --verbose
+        cordova plugin add plugin-src/rdzwx-plugin/ --nofetch --verbose
+        cordova prepare android --verbose
+
+    - name: Decode upload keystore
+      env:
+        ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      run: |
+        echo -n "$ANDROID_KEYSTORE_BASE64" | base64 --decode > upload.keystore
+        echo "Keystore decoded ($(stat -c%s upload.keystore) bytes)"
+
+    - name: Decode Google Play service-account JSON
+      env:
+        GOOGLE_PLAY_JSON_KEY_BASE64: ${{ secrets.GOOGLE_PLAY_JSON_KEY_BASE64 }}
+      run: |
+        echo -n "$GOOGLE_PLAY_JSON_KEY_BASE64" | base64 --decode > $RUNNER_TEMP/play-service-account.json
+        echo "GOOGLE_PLAY_JSON_KEY_PATH=$RUNNER_TEMP/play-service-account.json" >> $GITHUB_ENV
+
+    - name: Generate build.json for Cordova signing
+      env:
+        ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      run: |
+        node <<'NODE'
+        const fs = require('fs');
+        const cfg = {
+          android: {
+            release: {
+              keystore: "upload.keystore",
+              storePassword: process.env.ANDROID_KEYSTORE_PASSWORD,
+              alias: process.env.ANDROID_KEY_ALIAS,
+              password: process.env.ANDROID_KEY_PASSWORD,
+              keystoreType: ""
+            }
+          }
+        };
+        fs.writeFileSync('build.json', JSON.stringify(cfg, null, 2));
+        NODE
+
+    - name: Build & upload to Play Store
+      env:
+        ANDROID_PACKAGE_NAME: ${{ secrets.ANDROID_PACKAGE_NAME }}
+      run: bundle exec fastlane android beta
+
+    - name: Upload AAB as workflow artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: android-aab
+        path: platforms/android/app/build/outputs/bundle/release/*.aab
+        if-no-files-found: warn
+        retention-days: 30
+
+    - name: Clean up
+      if: always()
+      run: |
+        rm -f upload.keystore build.json
+        rm -f $RUNNER_TEMP/play-service-account.json

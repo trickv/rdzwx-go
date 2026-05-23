@@ -1,0 +1,87 @@
+# Fastlane release lanes for rdzwx-go (Cordova hybrid app).
+#
+# Version & build number flow: the GitHub Actions workflow edits config.xml
+# (widget version + ios-CFBundleVersion + android-versionCode) *before*
+# invoking these lanes, then runs `cordova prepare`. By the time fastlane
+# runs, the generated Xcode project / Android module already carry the
+# correct versions, so no increment_*_number calls are needed here.
+#
+# Bundle / package IDs are picked up from Appfile (env-driven).
+
+default_platform(:ios)
+
+IOS_WORKSPACE = "./platforms/ios/rdzSonde.xcworkspace"
+IOS_SCHEME = "rdzSonde"
+ANDROID_PROJECT_DIR = "./platforms/android"
+
+platform :ios do
+  desc "Build signed IPA and upload to TestFlight"
+  lane :beta do
+    bundle_id = ENV["IOS_BUNDLE_ID"] || "de.dl9rdz"
+    profile_name = ENV["APPLE_PROVISIONING_PROFILE_NAME"] || raise("APPLE_PROVISIONING_PROFILE_NAME not set")
+    team_id = ENV["APPLE_TEAM_ID"] || raise("APPLE_TEAM_ID not set")
+    code_sign_identity = ENV["APPLE_CODE_SIGN_IDENTITY"] || "Apple Distribution"
+
+    api_key = app_store_connect_api_key(
+      key_id: ENV["ASC_API_KEY_ID"],
+      issuer_id: ENV["ASC_API_ISSUER_ID"],
+      key_filepath: ENV["ASC_API_KEY_PATH"],
+    )
+
+    update_code_signing_settings(
+      path: "./platforms/ios/rdzSonde.xcodeproj",
+      use_automatic_signing: false,
+      team_id: team_id,
+      code_sign_identity: code_sign_identity,
+      profile_name: profile_name,
+      bundle_identifier: bundle_id,
+      targets: [IOS_SCHEME],
+    )
+
+    build_app(
+      workspace: IOS_WORKSPACE,
+      scheme: IOS_SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        signingStyle: "manual",
+        teamID: team_id,
+        provisioningProfiles: {
+          bundle_id => profile_name,
+        },
+      },
+    )
+
+    upload_to_testflight(
+      api_key: api_key,
+      skip_waiting_for_build_processing: true,
+      changelog: ENV["RELEASE_NOTES"] || "Bug fixes and improvements.",
+    )
+  end
+end
+
+platform :android do
+  desc "Build signed AAB and upload to Google Play internal track"
+  lane :beta do
+    # Cordova drives the build (it patches config.xml-derived values into the
+    # gradle module and applies build.json signing config). Calling cordova
+    # here instead of gradle directly keeps the platform-regeneration story
+    # consistent with `make release` and the existing release.yml.
+    # fastlane runs lanes with cwd set to the project root, so cordova picks
+    # up config.xml and build.json from the right place.
+    sh("cordova build android --release -- --packageType=bundle")
+
+    aab_path = Dir["#{ANDROID_PROJECT_DIR}/app/build/outputs/bundle/release/*.aab"].first
+    raise "No AAB found under #{ANDROID_PROJECT_DIR}/app/build/outputs/bundle/release/" unless aab_path
+
+    upload_to_play_store(
+      track: "internal",
+      aab: aab_path,
+      json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
+      skip_upload_metadata: true,
+      skip_upload_images: true,
+      skip_upload_screenshots: true,
+      skip_upload_apk: true,
+    )
+  end
+end

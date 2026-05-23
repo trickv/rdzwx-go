@@ -231,12 +231,83 @@ See `.github/workflows/README.md` for:
 - Advanced usage
 - Maintenance schedule
 
+## 🏪 Store Releases (optional, per-fork)
+
+The `release.yml` workflow includes two **optional** jobs that publish to the
+App Store (TestFlight) and Google Play (internal track). They are gated on
+the presence of fork-specific secrets and **skip silently on any fork that
+hasn't configured them** — including upstream. The pre-existing
+unsigned-IPA-for-AltStore job always runs and is unaffected.
+
+The jobs are driven by [Fastlane](https://fastlane.tools/). See `fastlane/Fastfile`
+for the lane definitions; both lanes consume env vars only — no fork-specific
+values are committed to the repo.
+
+### Enabling the iOS App Store job
+
+Set **all** of these repo secrets. Missing any one of them will cause the
+job to fail mid-run; the gating secret is `IOS_BUNDLE_ID`.
+
+| Secret | Description |
+| --- | --- |
+| `IOS_BUNDLE_ID` | Your App Store bundle identifier (e.g. `com.example.rdzwx`). Gates the job. |
+| `FASTLANE_APPLE_ID` | Apple ID email associated with your developer account. |
+| `APPLE_TEAM_ID` | 10-character Team ID from your Apple Developer account. |
+| `APPLE_CODE_SIGN_IDENTITY` | Code signing identity name. Defaults to `Apple Distribution`. |
+| `APPLE_PROVISIONING_PROFILE_NAME` | Exact name of the App Store provisioning profile. |
+| `BUILD_CERTIFICATE_BASE64` | Distribution `.p12` certificate, base64-encoded. |
+| `P12_PASSWORD` | Password for the `.p12` certificate. |
+| `KEYCHAIN_PASSWORD` | Arbitrary password for the ephemeral CI keychain. |
+| `BUILD_PROVISION_PROFILE_BASE64` | Provisioning profile `.mobileprovision`, base64-encoded. |
+| `ASC_API_KEY_BASE64` | App Store Connect API key (`.p8`), base64-encoded. |
+| `ASC_API_KEY_ID` | App Store Connect API key ID. |
+| `ASC_API_ISSUER_ID` | App Store Connect API issuer ID. |
+
+To base64-encode a file on macOS/Linux: `base64 -i certificate.p12 | tr -d '\n'`.
+
+### Enabling the Android Play Store job
+
+| Secret | Description |
+| --- | --- |
+| `ANDROID_PACKAGE_NAME` | Your Play Store package name (e.g. `com.example.rdzwx`). Gates the job. |
+| `ANDROID_KEYSTORE_BASE64` | Upload keystore (`.jks`), base64-encoded. |
+| `ANDROID_KEYSTORE_PASSWORD` | Keystore password. |
+| `ANDROID_KEY_ALIAS` | Key alias inside the keystore. |
+| `ANDROID_KEY_PASSWORD` | Password for the key (often same as keystore password). |
+| `GOOGLE_PLAY_JSON_KEY_BASE64` | Google Play service-account JSON, base64-encoded. |
+
+### One-time setup prerequisites (manual)
+
+- **Apple:** register the App ID, create the App Store Connect app record,
+  generate a distribution certificate + App Store provisioning profile, and
+  generate an App Store Connect API key.
+- **Google:** create the Play Console app record with your chosen package
+  name. Manually upload the first AAB via the Play Console UI — the Play
+  Developer API rejects the very first upload, so Fastlane can only take
+  over from the second release onward. Create a service account in Google
+  Cloud, grant it release permissions in Play Console, and download its JSON
+  key.
+- Both stores require a privacy policy URL; this repo does not currently
+  ship one.
+
+### Local Fastlane usage
+
+```bash
+bundle install
+# Export the same env vars listed above, then:
+bundle exec fastlane android beta   # local AAB → Play Store internal
+bundle exec fastlane ios beta       # local IPA → TestFlight (macOS only)
+```
+
+The legacy local Android release flow (`make release`, using the
+GPG-encrypted `my-release-key.jks.gpg`) is unchanged and still works.
+
 ## ✨ Future Enhancements
 
 Possible additions:
-- [ ] Automated release signing (with keystore secrets)
-- [ ] App Store Connect uploads (iOS)
-- [ ] Google Play uploads (Android)
+- [x] Automated release signing (with keystore secrets)
+- [x] App Store Connect uploads (iOS)
+- [x] Google Play uploads (Android)
 - [ ] E2E testing with Appium
 - [ ] Code coverage reports
 - [ ] Performance benchmarks

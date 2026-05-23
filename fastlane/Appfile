@@ -1,0 +1,14 @@
+# Per-fork values come from env. Defaults match the upstream `de.dl9rdz`
+# identifiers so this file is safe to ship to upstream without leaking
+# fork-specific config. Forks that want to ship to App Store / Play Store
+# set the IOS_BUNDLE_ID / ANDROID_PACKAGE_NAME secrets in CI; see CI_SETUP.md.
+
+for_platform :ios do
+  app_identifier(ENV["IOS_BUNDLE_ID"] || "de.dl9rdz")
+  apple_id(ENV["FASTLANE_APPLE_ID"]) if ENV["FASTLANE_APPLE_ID"]
+  team_id(ENV["APPLE_TEAM_ID"]) if ENV["APPLE_TEAM_ID"]
+end
+
+for_platform :android do
+  package_name(ENV["ANDROID_PACKAGE_NAME"] || "de.dl9rdz")
+end
