@@ -73,7 +73,13 @@ platform :android do
       aab_path = Dir["platforms/android/app/build/outputs/bundle/release/*.aab"].first
       raise "No AAB found under platforms/android/app/build/outputs/bundle/release/" unless aab_path
 
+      # Pass package_name explicitly. The Appfile's `package_name(ENV[...])`
+      # *should* be picked up by supply via CredentialsManager, but the chdir
+      # above seems to confuse its Appfile lookup, and Cordova doesn't expose
+      # a standard gradle AndroidManifest at the path supply autodetects.
+      # Being explicit is also more debuggable.
       upload_to_play_store(
+        package_name: ENV["ANDROID_PACKAGE_NAME"] || "de.dl9rdz",
         track: "internal",
         aab: File.expand_path(aab_path),
         json_key: ENV["GOOGLE_PLAY_JSON_KEY_PATH"],
