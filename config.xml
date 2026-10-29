@@ -31,6 +31,8 @@
     </platform>
     <icon src="res/icon512.png"/>
     <platform name="ios">
+        <!-- App Store Connect rejects uploads targeting below iOS 13 (cordova-ios 7 defaults to 11.0) -->
+        <preference name="deployment-target" value="13.0" />
         <!-- Allow HTTP connections to TTGO devices (equivalent to Android's usesCleartextTraffic) -->
         <edit-config file="*-Info.plist" mode="merge" target="NSAppTransportSecurity">
             <dict>
